@@ -1,16 +1,13 @@
 const express = require('express')
+const axios=require('axios')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const app=express()
 app.use(bodyParser.json())
 app.use(cors())
 const posts = {}
-app.get('/posts',(req,res)=>{
-    res.send(posts)
-})
 
-app.post('/events',(req,res)=>{
-    const {type,data}=req.body
+const event_handler  =(type,data)=>{
     if(type === "PostCreated"){
         const {id,title}=data
         posts[id]={id,title,comments:[]}
@@ -29,11 +26,26 @@ app.post('/events',(req,res)=>{
         comment.status=status
         comment.content=content
     }
+}
 
-    console.log(posts)
+app.get('/posts',(req,res)=>{
+    res.send(posts)
+})
+
+app.post('/events',(req,res)=>{
+    const {type,data}=req.body
+    
+    event_handler(type,data)
+    // console.log(posts)
     res.send({msg:"ok"})
 }) 
 
-app.listen(4002,(req,res)=>{
+app.listen(4002,async ()=>{
     console.log("Query on 4002")
+    const res = await axios.get('http://localhost:4005/events')
+    console.log(res.data)
+    for(let event of res.data){
+        console.log("Current Event : "+event.type)
+        event_handler(event.type,event.data)
+    }
 })
